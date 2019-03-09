@@ -123,23 +123,25 @@ public class RecommenderJob {
         recommender = ReflectionUtil.newInstance((Class<Recommender>) getRecommenderClass(), conf);
         RecommenderContext context = new RecommenderContext(conf);
         cvEvalResults = new HashMap<>();
-        while(dataModel.hasNextFold()) {
+        int fold = 1;
+        while (dataModel.hasNextFold()) {
             dataModel.nextFold();
             context.setDataModel(dataModel);
             generateSimilarity(context);
             recommender.train(context);
             executeEvaluator(recommender, context);
+            conf.setInt("data.splitter.cv.index", fold++);
+            boolean isRanking = conf.getBoolean("rec.recommender.isranking");
+            List<RecommendedItem> recommendedList;
+            if (isRanking) {
+                recommendedList = recommender.getRecommendedList(recommender.recommendRank());
+            } else {
+                recommendedList = recommender.getRecommendedList(recommender.recommendRating(context.getDataModel().getTestDataSet()));
+            }
+            recommendedList = filterResult(recommendedList);
+            saveResult(recommendedList);
         }
         printCVAverageResult();
-        boolean isRanking = conf.getBoolean("rec.recommender.isranking");
-        List<RecommendedItem> recommendedList = null;
-        if (isRanking){
-            recommendedList = recommender.getRecommendedList(recommender.recommendRank());
-        } else {
-            recommendedList = recommender.getRecommendedList(recommender.recommendRating(context.getDataModel().getTestDataSet()));
-        }
-        recommendedList = filterResult(recommendedList);
-        saveResult(recommendedList);
     }
 
     /**
@@ -204,7 +206,7 @@ public class RecommenderJob {
      */
     private void executeEvaluator(Recommender recommender, RecommenderContext context) throws ClassNotFoundException, IOException, LibrecException {
         if (conf.getBoolean("rec.eval.enable")) {
-            DataSet dataSet =  dataModel.getTestDataSet();
+            DataSet dataSet = dataModel.getTestDataSet();
             String[] similarityKeys = conf.getStrings("rec.recommender.similarities");
             EvalContext evalContext = null;
             if (similarityKeys != null && similarityKeys.length > 0) {
@@ -348,14 +350,6 @@ public class RecommenderJob {
         conf.set("rec.job.id", jobId);
     }
 
-    public void setRecommenderClass(String jobClass) {
-        conf.set("rec.recommender.class", jobClass);
-    }
-
-    public void setRecommenderClass(Class<Recommender> jobClass) {
-        conf.set("rec.recommender.class", jobClass.getName());
-    }
-
     /**
      * Get data model class.
      *
@@ -392,6 +386,14 @@ public class RecommenderJob {
     @SuppressWarnings("unchecked")
     public Class<? extends Recommender> getRecommenderClass() throws ClassNotFoundException, IOException {
         return (Class<? extends Recommender>) DriverClassUtil.getClass(conf.get("rec.recommender.class"));
+    }
+
+    public void setRecommenderClass(String jobClass) {
+        conf.set("rec.recommender.class", jobClass);
+    }
+
+    public void setRecommenderClass(Class<Recommender> jobClass) {
+        conf.set("rec.recommender.class", jobClass.getName());
     }
 
     /**
