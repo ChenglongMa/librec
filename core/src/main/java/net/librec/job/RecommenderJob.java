@@ -130,6 +130,7 @@ public class RecommenderJob {
             generateSimilarity(context);
             recommender.train(context);
             executeEvaluator(recommender, context);
+            // mcl: save each fold result
             conf.setInt("data.splitter.cv.index", fold++);
             boolean isRanking = conf.getBoolean("rec.recommender.isranking");
             List<RecommendedItem> recommendedList;
@@ -142,6 +143,7 @@ public class RecommenderJob {
             saveResult(recommendedList);
         }
         printCVAverageResult();
+        // TODO: what if there is no fold?
     }
 
     /**
