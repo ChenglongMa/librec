@@ -308,7 +308,7 @@ public class RecommenderJob {
             if (null != dataModel && (dataModel.getDataSplitter() instanceof KCVDataSplitter || dataModel.getDataSplitter() instanceof LOOCVDataSplitter) && null != conf.getInt("data.splitter.cv.index")) {
                 outputPath = outputPath + "-" + String.valueOf(conf.getInt("data.splitter.cv.index"));
             }
-            LOG.info(String.format("Result path is %s\n", outputPath));
+            LOG.info(String.format("Result path is %s%s", outputPath,System.lineSeparator()));
             // convert itemList to string
             StringBuilder sb = new StringBuilder();
             for (RecommendedItem recItem : recommendedList) {
