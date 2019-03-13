@@ -36,10 +36,7 @@ import net.librec.recommender.RecommenderContext;
 import net.librec.recommender.item.RecommendedItem;
 import net.librec.recommender.item.RecommendedList;
 import net.librec.similarity.RecommenderSimilarity;
-import net.librec.util.DriverClassUtil;
-import net.librec.util.FileUtil;
-import net.librec.util.JobUtil;
-import net.librec.util.ReflectionUtil;
+import net.librec.util.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -58,7 +55,8 @@ public class RecommenderJob {
     /**
      * LOG
      */
-    protected final Log LOG = LogFactory.getLog(RecommenderJob.class);
+//    protected final Log LOG = LogFactory.getLog(RecommenderJob.class);
+    private final Log LOG = LogFactory.getLog("resInfo");
 
     private Configuration conf;
 
@@ -69,6 +67,8 @@ public class RecommenderJob {
     private Map<MeasureValue, Double> evaluatedMap;
 
     private Recommender recommender;
+
+    private long timestamp;
 
     public RecommenderJob(Configuration conf) {
         this.conf = conf;
@@ -125,6 +125,7 @@ public class RecommenderJob {
         RecommenderContext context = new RecommenderContext(conf);
         cvEvalResults = new HashMap<>();
         int fold = 0;
+        timestamp = System.currentTimeMillis();
         while (dataModel.hasNextFold()) {
             dataModel.nextFold();
             context.setDataModel(dataModel);
@@ -298,15 +299,16 @@ public class RecommenderJob {
      * @throws IOException            if I/O error occurs
      * @throws ClassNotFoundException if class not found error occurs
      */
-    public void saveResult(List<RecommendedItem> recommendedList) throws LibrecException, IOException, ClassNotFoundException {
+    public void saveResult(List<RecommendedItem> recommendedList) throws IOException, ClassNotFoundException {
         if (recommendedList != null && recommendedList.size() > 0) {
             // make output path
+            String time = DateUtil.toString(timestamp);
             String algoSimpleName = DriverClassUtil.getDriverName(getRecommenderClass());
-            String outputPath = conf.get("dfs.result.dir") + "/" + conf.get("data.input.path") + "-" + algoSimpleName + "-output/" + algoSimpleName;
+            String outputPath = conf.get("dfs.result.dir") + "/" + conf.get("data.input.path") + "-" + algoSimpleName + "-output-" + time + "/" + algoSimpleName;
             if (null != dataModel && (dataModel.getDataSplitter() instanceof KCVDataSplitter || dataModel.getDataSplitter() instanceof LOOCVDataSplitter) && null != conf.getInt("data.splitter.cv.index")) {
                 outputPath = outputPath + "-" + String.valueOf(conf.getInt("data.splitter.cv.index"));
             }
-            LOG.info("Result path is " + outputPath);
+            LOG.info(String.format("Result path is %s\n", outputPath));
             // convert itemList to string
             StringBuilder sb = new StringBuilder();
             for (RecommendedItem recItem : recommendedList) {

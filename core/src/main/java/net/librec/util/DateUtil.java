@@ -35,7 +35,7 @@ public class DateUtil {
     /**
      * pattern
      */
-    public final static String PATTERN_yyyy_MM_dd_HH_mm_SS = "yyyy-MM-dd HH-mm-SS";
+    public final static String PATTERN_yyyy_MM_dd_HH_mm_SS = "yyyy-MM-dd_HH-mm-SS";
     /**
      * simple date pattern
      */
@@ -94,9 +94,8 @@ public class DateUtil {
      *
      * @param mms the milliseconds date
      * @return string of date
-     * @throws Exception if error occurs
      */
-    public static String toString(long mms) throws Exception {
+    public static String toString(long mms) {
         return sdf.format(new java.sql.Date(mms));
     }
 
