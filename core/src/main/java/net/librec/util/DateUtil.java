@@ -82,9 +82,8 @@ public class DateUtil {
      * @param mms     the milliseconds date
      * @param pattern a specified pattern
      * @return string of date
-     * @throws Exception if error occurs
      */
-    public static String toString(long mms, String pattern) throws Exception {
+    public static String toString(long mms, String pattern) {
         SimpleDateFormat sdf = new SimpleDateFormat(pattern);
         return sdf.format(new java.sql.Date(mms));
     }

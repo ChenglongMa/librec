@@ -302,7 +302,7 @@ public class RecommenderJob {
     public void saveResult(List<RecommendedItem> recommendedList) throws IOException, ClassNotFoundException {
         if (recommendedList != null && recommendedList.size() > 0) {
             // make output path
-            String time = DateUtil.toString(timestamp);
+            String time = DateUtil.toString(timestamp,"yyMMddHHmmss");
             String algoSimpleName = DriverClassUtil.getDriverName(getRecommenderClass());
             String outputPath = conf.get("dfs.result.dir") + "/" + conf.get("data.input.path") + "-" + algoSimpleName + "-output-" + time + "/" + algoSimpleName;
             if (null != dataModel && (dataModel.getDataSplitter() instanceof KCVDataSplitter || dataModel.getDataSplitter() instanceof LOOCVDataSplitter) && null != conf.getInt("data.splitter.cv.index")) {
