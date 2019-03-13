@@ -34,6 +34,7 @@ import net.librec.math.structure.SymmMatrix;
 import net.librec.recommender.Recommender;
 import net.librec.recommender.RecommenderContext;
 import net.librec.recommender.item.RecommendedItem;
+import net.librec.recommender.item.RecommendedList;
 import net.librec.similarity.RecommenderSimilarity;
 import net.librec.util.DriverClassUtil;
 import net.librec.util.FileUtil;
@@ -123,7 +124,7 @@ public class RecommenderJob {
         recommender = ReflectionUtil.newInstance((Class<Recommender>) getRecommenderClass(), conf);
         RecommenderContext context = new RecommenderContext(conf);
         cvEvalResults = new HashMap<>();
-        int fold = 1;
+        int fold = 0;
         while (dataModel.hasNextFold()) {
             dataModel.nextFold();
             context.setDataModel(dataModel);
@@ -131,19 +132,34 @@ public class RecommenderJob {
             recommender.train(context);
             executeEvaluator(recommender, context);
             // mcl: save each fold result
-            conf.setInt("data.splitter.cv.index", fold++);
-            boolean isRanking = conf.getBoolean("rec.recommender.isranking");
-            List<RecommendedItem> recommendedList;
-            if (isRanking) {
-                recommendedList = recommender.getRecommendedList(recommender.recommendRank());
-            } else {
-                recommendedList = recommender.getRecommendedList(recommender.recommendRating(context.getDataModel().getTestDataSet()));
-            }
-            recommendedList = filterResult(recommendedList);
-            saveResult(recommendedList);
+            conf.setInt("data.splitter.cv.index", ++fold);
+            save(context);
         }
         printCVAverageResult();
-        // TODO: what if there is no fold?
+        // save result if no fold
+        if (fold == 0) {
+            save(context);
+        }
+    }
+
+    /**
+     * Wrapper method for {@link #saveResult(List)}
+     * @param context
+     * @throws LibrecException
+     * @throws ClassNotFoundException
+     * @throws IOException
+     */
+    private void save(RecommenderContext context) throws LibrecException, ClassNotFoundException, IOException {
+        boolean isRanking = conf.getBoolean("rec.recommender.isranking");
+        RecommendedList recommendedList;
+        if (isRanking) {
+            recommendedList = recommender.recommendRank();
+        } else {
+            recommendedList = recommender.recommendRating(context.getDataModel().getTestDataSet());
+        }
+        List<RecommendedItem> items = recommender.getRecommendedList(recommendedList);
+        items = filterResult(items);
+        saveResult(items);
     }
 
     /**
