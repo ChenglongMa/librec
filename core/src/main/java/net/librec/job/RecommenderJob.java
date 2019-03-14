@@ -145,6 +145,7 @@ public class RecommenderJob {
 
     /**
      * Wrapper method for {@link #saveResult(List)}
+     *
      * @param context
      * @throws LibrecException
      * @throws ClassNotFoundException
@@ -302,13 +303,13 @@ public class RecommenderJob {
     public void saveResult(List<RecommendedItem> recommendedList) throws IOException, ClassNotFoundException {
         if (recommendedList != null && recommendedList.size() > 0) {
             // make output path
-            String time = DateUtil.toString(timestamp,"yyMMddHHmmss");
+            String time = DateUtil.toString(timestamp, "yyMMddHHmmss");
             String algoSimpleName = DriverClassUtil.getDriverName(getRecommenderClass());
             String outputPath = conf.get("dfs.result.dir") + "/" + conf.get("data.input.path") + "-" + algoSimpleName + "-output-" + time + "/" + algoSimpleName;
             if (null != dataModel && (dataModel.getDataSplitter() instanceof KCVDataSplitter || dataModel.getDataSplitter() instanceof LOOCVDataSplitter) && null != conf.getInt("data.splitter.cv.index")) {
                 outputPath = outputPath + "-" + String.valueOf(conf.getInt("data.splitter.cv.index"));
             }
-            LOG.info(String.format("Result path is %s%s", outputPath,System.lineSeparator()));
+            LOG.info(String.format("Result path is %s%s", outputPath, System.lineSeparator()));
             // convert itemList to string
             StringBuilder sb = new StringBuilder();
             for (RecommendedItem recItem : recommendedList) {
@@ -344,6 +345,7 @@ public class RecommenderJob {
                 double avgEvalResult = sum / evalList.size();
                 LOG.info("Evaluator value:" + evalName + " is " + avgEvalResult);
             }
+            LOG.info(System.lineSeparator());
         }
     }
 
