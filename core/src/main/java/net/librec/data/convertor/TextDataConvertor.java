@@ -145,7 +145,8 @@ public class TextDataConvertor extends AbstractDataConvertor {
         if (Objects.isNull(header)) {
             if (dataColumnFormat.toLowerCase().equals("uirt")) {
                 header = new String[]{"user", "item", "rating", "datetime"};
-                attr = new String[]{"STRING", "STRING", "NUMERIC", "DATE"};
+//                attr = new String[]{"STRING", "STRING", "NUMERIC", "DATE"};
+                attr = new String[]{"STRING", "STRING", "NUMERIC", "STRING"}; //TODO: may be risk
             } else {
                 header = new String[]{"user", "item", "rating"};
                 attr = new String[]{"STRING", "STRING", "NUMERIC"};

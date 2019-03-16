@@ -21,8 +21,7 @@ import com.google.common.collect.BiMap;
 import net.librec.common.LibrecException;
 import net.librec.conf.Configured;
 import net.librec.data.*;
-import net.librec.math.structure.DataFrame;
-import net.librec.math.structure.DataSet;
+import net.librec.math.structure.*;
 import net.librec.util.DriverClassUtil;
 import net.librec.util.ReflectionUtil;
 import org.apache.commons.lang.StringUtils;
@@ -30,6 +29,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * A <tt>AbstractDataModel</tt> represents a data access class to the input
@@ -42,6 +42,14 @@ public abstract class AbstractDataModel extends Configured implements DataModel 
      * LOG
      */
     protected final Log LOG = LogFactory.getLog(this.getClass());
+    /**
+     * Data Splitter {@link net.librec.data.DataSplitter}
+     */
+    public DataSplitter dataSplitter;
+    /**
+     * Data Splitter {@link DataAppender}
+     */
+    public DataAppender dataAppender;
     /**
      * context
      */
@@ -58,20 +66,10 @@ public abstract class AbstractDataModel extends Configured implements DataModel 
      * valid DataSet
      */
     protected DataSet validDataSet;
-
     /**
      * The convertor of the model {@link net.librec.data.DataConvertor}
      */
     protected DataConvertor dataConvertor;
-
-    /**
-     * Data Splitter {@link net.librec.data.DataSplitter}
-     */
-    public DataSplitter dataSplitter;
-    /**
-     * Data Splitter {@link DataAppender}
-     */
-    public DataAppender dataAppender;
 
     /**
      * Build Convert.
@@ -149,20 +147,6 @@ public abstract class AbstractDataModel extends Configured implements DataModel 
         }
     }
 
-    @Override
-    public boolean hasNextFold(){
-        // where or not has next fold( decided by Splitter
-        return dataSplitter.nextFold();
-    }
-
-    @Override
-    public void nextFold(){
-        trainDataSet = dataSplitter.getTrainData();
-        testDataSet = dataSplitter.getTestData();
-        validDataSet = dataSplitter.getValidData();
-        // generate next fold by Splitter
-    }
-
     /**
      * Load data model.
      *
@@ -183,6 +167,16 @@ public abstract class AbstractDataModel extends Configured implements DataModel 
     public void saveDataModel() throws LibrecException {
         // TODO Auto-generated method stub
 
+    }
+
+    /**
+     * Get data splitter.
+     *
+     * @return the splitter of data model.
+     */
+    @Override
+    public DataSplitter getDataSplitter() {
+        return dataSplitter;
     }
 
     /**
@@ -215,14 +209,19 @@ public abstract class AbstractDataModel extends Configured implements DataModel 
         return validDataSet;
     }
 
-    /**
-     * Get data splitter.
-     *
-     * @return the splitter of data model.
-     */
     @Override
-    public DataSplitter getDataSplitter() {
-        return dataSplitter;
+    public DataSet getDatetimeDataSet() {
+        return null;
+    }
+
+    @Override
+    public BiMap<String, Integer> getUserMappingData() {
+        return DataFrame.getInnerMapping("user");
+    }
+
+    @Override
+    public BiMap<String, Integer> getItemMappingData() {
+        return DataFrame.getInnerMapping("item");
     }
 
     /**
@@ -246,17 +245,53 @@ public abstract class AbstractDataModel extends Configured implements DataModel 
     }
 
     @Override
-    public DataSet getDatetimeDataSet() {
-        return null;
+    public void nextFold() {
+        trainDataSet = dataSplitter.getTrainData();
+        testDataSet = dataSplitter.getTestData();
+        validDataSet = dataSplitter.getValidData();
+        // generate next fold by Splitter
+        String parentRec = conf.get("rec.recommender.parent", "null").toLowerCase();
+        if ("tensor".equals(parentRec)) {
+            amendSplitter();
+        }
     }
 
     @Override
-    public BiMap<String, Integer> getUserMappingData(){
-        return DataFrame.getInnerMapping("user");
+    public boolean hasNextFold() {
+        // where or not has next fold( decided by Splitter
+        return dataSplitter.nextFold();
     }
 
-    @Override
-    public BiMap<String, Integer> getItemMappingData(){
-        return DataFrame.getInnerMapping("item");
+    protected void amendSplitter() {
+        if (dataConvertor != null && dataSplitter != null) {
+            SparseTensor totalTensor = dataConvertor.getSparseTensor();
+            // SparseMatrix trainMatrix = dataSplitter.getTrainData();
+            SequentialAccessSparseMatrix testMatrix = dataSplitter.getTestData();
+            // construct train/test tensor from test sparse matrix
+            SparseTensor trainTensor = totalTensor.clone();
+            int[] dimensions = trainTensor.dimensions();
+            SparseTensor testTensor = new SparseTensor(dimensions);
+            testTensor.setUserDimension(trainTensor.getUserDimension());
+            testTensor.setItemDimension(trainTensor.getItemDimension());
+
+            for (MatrixEntry me : testMatrix) {
+                int u = me.row();
+                int i = me.column();
+
+                List<Integer> indices = totalTensor.getIndices(u, i);
+
+                for (int index : indices) {
+                    int[] keys = totalTensor.keys(index);
+                    try {
+                        testTensor.set(totalTensor.value(index), keys);
+                        trainTensor.remove(keys);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            trainDataSet = trainTensor;
+            testDataSet = testTensor;
+        }
     }
 }
