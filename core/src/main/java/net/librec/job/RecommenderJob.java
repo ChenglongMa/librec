@@ -56,7 +56,7 @@ public class RecommenderJob {
      * LOG
      */
 //    protected final Log LOG = LogFactory.getLog(RecommenderJob.class);
-    private final Log LOG = LogFactory.getLog("resInfo");
+    private final Log LOG;
 
     private Configuration conf;
 
@@ -77,6 +77,7 @@ public class RecommenderJob {
             Randoms.seed(seed);
         }
         setJobId(JobUtil.generateNewJobId());
+        LOG = LogFactory.getLog("resInfo");
     }
 
     /**

@@ -18,6 +18,7 @@
 package net.librec.data.convertor;
 
 import com.google.common.collect.BiMap;
+import net.librec.conf.Configuration;
 import net.librec.math.structure.DataFrame;
 import net.librec.util.StringUtil;
 import okio.BufferedSource;
@@ -66,6 +67,7 @@ public class TextDataConvertor extends AbstractDataConvertor {
     private String[] attr;
     private String sep;
     private float fileRate;
+    private Configuration conf;
     /**
      * the path of the input data file
      */
@@ -128,6 +130,12 @@ public class TextDataConvertor extends AbstractDataConvertor {
         this.sep = sep;
     }
 
+    public TextDataConvertor(String dataColumnFormat,
+                             String[] inputDataPath,
+                             String sep, Configuration conf) {
+        this(dataColumnFormat, inputDataPath, sep);
+        this.conf = conf;
+    }
 
     /**
      * Process the input data.
@@ -139,18 +147,27 @@ public class TextDataConvertor extends AbstractDataConvertor {
         readData(inputDataPath);
     }
 
+    private void setHeader() {
+        if (dataColumnFormat.toLowerCase().equals("uirt")) {
+            header = new String[]{"user", "item", "rating", "datetime"};
+            attr = new String[]{"STRING", "STRING", "NUMERIC", "DATE"};
+            if (conf != null) {
+                String algoParent = conf.get("rec.recommender.parent", "null");
+                if ("tensor".equals(algoParent)) {
+                    attr = new String[]{"STRING", "STRING", "NUMERIC", "STRING"};
+                }
+            }
+        } else {
+            header = new String[]{"user", "item", "rating"};
+            attr = new String[]{"STRING", "STRING", "NUMERIC"};
+        }
+    }
+
     private void readData(String... inputDataPath) throws IOException {
         LOG.info(String.format("Dataset: %s", Arrays.toString(inputDataPath)));
         matrix = new DataFrame();
         if (Objects.isNull(header)) {
-            if (dataColumnFormat.toLowerCase().equals("uirt")) {
-                header = new String[]{"user", "item", "rating", "datetime"};
-//                attr = new String[]{"STRING", "STRING", "NUMERIC", "DATE"};
-                attr = new String[]{"STRING", "STRING", "NUMERIC", "STRING"}; //TODO: may be risk
-            } else {
-                header = new String[]{"user", "item", "rating"};
-                attr = new String[]{"STRING", "STRING", "NUMERIC"};
-            }
+            setHeader();
         }
 
         matrix.setAttrType(attr);
@@ -179,7 +196,8 @@ public class TextDataConvertor extends AbstractDataConvertor {
                     }
                     String[] eachRow = pattern.split(temp);
                     for (int i = 0; i < header.length; i++) {
-                        if (Objects.equals(attr[i], "STRING")) {
+                        String a = attr[i].toUpperCase();
+                        if (Objects.equals(a, "STRING")||Objects.equals(a,"DATE")) {
                             DataFrame.setId(eachRow[i], matrix.getHeader(i));
                         }
                     }
