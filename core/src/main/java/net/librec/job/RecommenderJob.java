@@ -39,6 +39,8 @@ import net.librec.similarity.RecommenderSimilarity;
 import net.librec.util.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -56,7 +58,7 @@ public class RecommenderJob {
      * LOG
      */
 //    protected final Log LOG = LogFactory.getLog(RecommenderJob.class);
-    private final Log LOG;
+    protected final Logger LOG;
 
     private Configuration conf;
 
@@ -77,7 +79,8 @@ public class RecommenderJob {
             Randoms.seed(seed);
         }
         setJobId(JobUtil.generateNewJobId());
-        LOG = LogFactory.getLog("resInfo");
+        System.out.println(System.getProperty("rec_prefix"));
+        LOG = LogManager.getLogger("resInfo");
     }
 
     /**
