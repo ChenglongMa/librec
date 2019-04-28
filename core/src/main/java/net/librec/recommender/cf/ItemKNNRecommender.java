@@ -129,7 +129,7 @@ public class ItemKNNRecommender extends MatrixRecommender {
         if (isRanking) {
             return predictValue;
         } else {
-            return predictValue > 0 ? itemMeans.get(userIdx) + predictValue / simSum : globalMean;
+            return predictValue > 0 ? itemMeans.get(itemIdx) + predictValue / simSum : globalMean;
         }
     }
 
